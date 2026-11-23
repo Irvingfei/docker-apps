@@ -1,0 +1,6 @@
+build/
+dist/
+.secrets.json
+.env
+__pycache__/
+*.pyc
