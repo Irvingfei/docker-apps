@@ -45,7 +45,7 @@ def call(method, url, payload=None, raw=None, ctype="application/json"):
     req.add_header("Accept", "application/vnd.github+json")
     req.add_header("Content-Type", ctype)
     req.add_header("X-GitHub-Api-Version", "2022-11-28")
-    req.add_header("User-Agent", "tos-docker-apps")
+    req.add_header("User-Agent", "docker-apps")
     for attempt in range(4):
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
@@ -67,7 +67,7 @@ REPO_OVERRIDES = {"coder-code-server": "code-server"}
 
 
 def repo_name(app_id):
-    return "tos-" + REPO_OVERRIDES.get(app_id, app_id)
+    return REPO_OVERRIDES.get(app_id, app_id)
 
 
 def app_kind(app_id):
@@ -114,7 +114,7 @@ The `src/` directory contains the files the package is built from:
 The package tree itself (service unit, nginx location, maintainer scripts) is
 produced by `build_deb.py` in the build toolchain.
 
-Build toolchain: https://github.com/Irvingfei/tos-docker-apps
+Build toolchain: https://github.com/Irvingfei/docker-apps
 
 ## Install
 
@@ -153,7 +153,7 @@ The `src/` directory contains the files the package is built from:
 - `src/%s.lang` — 14 language sections
 - `src/%s.svg` — application icon
 
-Build toolchain: https://github.com/Irvingfei/tos-docker-apps
+Build toolchain: https://github.com/Irvingfei/docker-apps
 
 ## Install
 

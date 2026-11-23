@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Upload the packaging toolchain and per-app sources to GitHub.
 
-Creates Irvingfei/tos-docker-apps for the toolchain and commits src/ trees into
-each Irvingfei/tos-<app> repository. Dry-run by default; pass --apply to write.
+Creates Irvingfei/docker-apps for the toolchain and commits src/ trees into
+each Irvingfei/<app> repository. Dry-run by default; pass --apply to write.
 """
 
 import argparse
@@ -15,7 +15,7 @@ import sys
 from build import APPS, ARCHES, ICONS, ROOT, build_config, build_lang
 from publish_github import API, OWNER, TOKEN, call, repo_name, repo_readme
 
-TOOLCHAIN_REPO = "tos-docker-apps"
+TOOLCHAIN_REPO = "docker-apps"
 TOOLCHAIN_FILES = [
     "README.md",
     "build.py",
@@ -36,7 +36,7 @@ assets are built from these files.
 {extra}- `{lang}` — 14 language sections
 - `{svg}` — application icon
 
-Build toolchain: https://github.com/Irvingfei/tos-docker-apps
+Build toolchain: https://github.com/Irvingfei/docker-apps
 """
 
 SRC_COMPOSE_LINE = "- `docker-compose.yml` — build template; `@@...@@` placeholders are replaced at build time\n"

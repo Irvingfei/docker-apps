@@ -66,7 +66,7 @@ REPO_OVERRIDES = {"coder-code-server": "code-server"}
 
 
 def repo_url(app_id):
-    return "https://github.com/%s/tos-%s" % (OWNER, REPO_OVERRIDES.get(app_id, app_id))
+    return "https://github.com/%s/%s" % (OWNER, REPO_OVERRIDES.get(app_id, app_id))
 
 
 def app_kind(app_id):

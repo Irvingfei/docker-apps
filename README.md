@@ -20,7 +20,7 @@
 | wger | `wger` | Docker | `wger/server:2.7` + PostgreSQL/Redis/Celery/nginx | 18089 | PostgreSQL、静态与媒体文件 | amd64/arm64 | 7 个容器，首次启动 5–10 分钟 |
 | CookCLI | `cookcli` | Deb | 上游 0.41.1 静态 musl 二进制 | 18087 | `cookcli-data` 共享文件夹 | amd64/arm64 | 默认无登录，同网段可改食谱 |
 
-> `code-server` 与 `codeserver` 已被平台其他开发者占用，应用 ID 使用 `coder-code-server`；GitHub 仓库仍为 `Irvingfei/tos-code-server`。
+> `code-server` 与 `codeserver` 已被平台其他开发者占用，应用 ID 使用 `coder-code-server`；GitHub 仓库仍为 `Irvingfei/code-server`。
 
 Docker 产物在 `dist/<appid>/`：`<appid>_x86_64.tar.gz`、`<appid>_aarch64.tar.gz` 及对应 `.sha256`。
 Deb 产物在 `dist/cookcli/`：`cookcli_x86_64.deb`、`cookcli_aarch64.deb` 及对应 `.sha256`。
@@ -61,7 +61,7 @@ GitHub 仓库默认建在 `Irvingfei` 名下，可用 `GITHUB_OWNER` 覆盖。�
 ## 源码仓库
 
 - 每个应用仓库的 `src/` 保存该应用的打包源码：`config.x86_64.ini`、`config.aarch64.ini`、`docker-compose.yml`、`<appid>.lang`、`<appid>.svg`。compose 中的 `@@...@@` 为构建时替换的占位符。
-- 打包工具链发布在 `https://github.com/Irvingfei/tos-docker-apps`（不含 `.env` 与 `.secrets.json`）。
+- 打包工具链发布在 `https://github.com/Irvingfei/docker-apps`（不含 `.env` 与 `.secrets.json`）。
 
 ```bash
 python publish_sources.py --apply   # 上传工具链和应用源码

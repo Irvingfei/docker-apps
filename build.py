@@ -693,6 +693,7 @@ APPS["wger"] = {
 x-wger-env: &wger-env
   - TZ=Asia/Shanghai
   - TIME_ZONE=Asia/Shanghai
+  - DJANGO_DEBUG=False
   - SECRET_KEY=@@secret_key@@
   - SITE_URL=http://localhost:18089
   - JWT_PUBLIC_KEY=@@jwt_public_key@@
