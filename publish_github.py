@@ -10,6 +10,7 @@ import base64
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -45,15 +46,21 @@ def call(method, url, payload=None, raw=None, ctype="application/json"):
     req.add_header("Content-Type", ctype)
     req.add_header("X-GitHub-Api-Version", "2022-11-28")
     req.add_header("User-Agent", "tos-docker-apps")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            return resp.status, json.loads(resp.read().decode() or "{}")
-    except urllib.error.HTTPError as exc:
-        raw_body = exc.read().decode()
+    for attempt in range(4):
         try:
-            return exc.code, json.loads(raw_body or "{}")
-        except ValueError:
-            return exc.code, {"raw": raw_body[:400]}
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return resp.status, json.loads(resp.read().decode() or "{}")
+        except urllib.error.HTTPError as exc:
+            raw_body = exc.read().decode()
+            try:
+                return exc.code, json.loads(raw_body or "{}")
+            except ValueError:
+                return exc.code, {"raw": raw_body[:400]}
+        except (urllib.error.URLError, OSError) as exc:
+            if attempt == 3:
+                raise
+            print("  retry %s %s (%s)" % (method, url.split("/repos/")[-1], exc))
+            time.sleep(2 + attempt * 3)
 
 
 REPO_OVERRIDES = {"coder-code-server": "code-server"}
