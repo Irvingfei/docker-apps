@@ -69,8 +69,13 @@ def repo_url(app_id):
     return "https://github.com/%s/tos-%s" % (OWNER, REPO_OVERRIDES.get(app_id, app_id))
 
 
+def app_kind(app_id):
+    return APPS[app_id].get("kind", "docker")
+
+
 def asset_url(app_id, arch):
-    return "%s/releases/download/%s/%s_%s.tar.gz" % (repo_url(app_id), TAG, app_id, arch)
+    ext = "deb" if app_kind(app_id) == "deb" else "tar.gz"
+    return "%s/releases/download/%s/%s_%s.%s" % (repo_url(app_id), TAG, app_id, arch, ext)
 
 
 def find_app(records, app_id, arch):
@@ -78,7 +83,9 @@ def find_app(records, app_id, arch):
         kind = item.get("kind")
         if kind == "docker image":
             kind = "docker"
-        if item.get("app_id") == app_id and kind == "docker" and item.get("platform") == arch:
+        if kind == ".deb":
+            kind = "deb"
+        if item.get("app_id") == app_id and kind == app_kind(app_id) and item.get("platform") == arch:
             return item
     return None
 
@@ -88,12 +95,12 @@ def ensure_app(records, app_id, arch, apply):
     if existing:
         print("app exists: %s/%s -> %s" % (app_id, arch, existing.get("id")))
         return existing
-    print("create app: %s (%s) repo=%s" % (app_id, arch, repo_url(app_id)))
+    print("create app: %s (%s, %s) repo=%s" % (app_id, arch, app_kind(app_id), repo_url(app_id)))
     if not apply:
         return None
     status, body = call("POST", "/v1/apps", {
         "app_id": app_id,
-        "kind": "docker",
+        "kind": app_kind(app_id),
         "platform": arch,
         "repo": repo_url(app_id),
     })
@@ -173,7 +180,7 @@ def main():
         for arch in arches:
             print("\n=== %s / %s ===" % (app_id, arch))
             app = ensure_app(records, app_id, arch, args.apply)
-            if args.apply and not app:
+            if not app:
                 continue
             submit_version(app["id"], app_id, arch, args.apply)
             if args.apply:

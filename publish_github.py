@@ -63,8 +63,66 @@ def repo_name(app_id):
     return "tos-" + REPO_OVERRIDES.get(app_id, app_id)
 
 
+def app_kind(app_id):
+    return APPS[app_id].get("kind", "docker")
+
+
+def asset_files(app_id):
+    """Release asset file names for both architectures, package plus checksum."""
+    ext = "deb" if app_kind(app_id) == "deb" else "tar.gz"
+    names = []
+    for arch in ARCHES:
+        base = "%s_%s.%s" % (app_id, arch, ext)
+        names.extend([base, base + ".sha256"])
+    return names
+
+
 def repo_readme(app_id):
     app = APPS[app_id]
+    kind = app_kind(app_id)
+    if kind == "deb":
+        return """# %s for TOS 7 (Deb)
+
+%s
+
+%s
+
+## Package
+
+- Application ID: `%s`
+- Type: Deb single package (TOS 7)
+- Architecture: `x86_64`, `aarch64`
+- Backend: static binary from the upstream release, run as a systemd service
+- Web UI: served at `/<app_id>/` through the TOS nginx entry
+- Recipe folder: the `%s-data` NAS shared folder, or the package data directory
+
+## Source
+
+The `src/` directory contains the files the package is built from:
+
+- `src/config.x86_64.ini` / `src/config.aarch64.ini` — `config.ini` per architecture
+- `src/%s.lang` — 14 language sections
+- `src/%s.svg` — application icon
+
+The package tree itself (service unit, nginx location, maintainer scripts) is
+produced by `build_deb.py` in the build toolchain.
+
+Build toolchain: https://github.com/Irvingfei/tos-docker-apps
+
+## Install
+
+1. In the TOS App Center, add this repository's application and submit the matching `%s_<arch>.deb` asset from the latest Release.
+2. Recipes live in the shared folder the package creates; drop `.cook` files there over SMB or the File Manager.
+
+## Notes
+
+%s
+
+This repository packages the upstream open-source application for TerraMaster TOS 7.
+It is not affiliated with or endorsed by the upstream project. Application names and
+trademarks belong to their respective owners.
+""" % (app["name"], app["descript"]["zh-cn"], app["descript"]["en-us"], app_id, app_id, app_id, app_id,
+       app_id, app["important"]["zh-cn"])
     return """# %s for TOS 7 (Docker)
 
 %s
@@ -120,7 +178,8 @@ def ensure_repo(app_id, apply):
         return None
     status, body = call("POST", "%s/user/repos" % API, {
         "name": name,
-        "description": "%s packaged for TerraMaster TOS 7 (Docker)" % APPS[app_id]["name"],
+        "description": "%s packaged for TerraMaster TOS 7 (%s)" % (
+            APPS[app_id]["name"], "Deb" if app_kind(app_id) == "deb" else "Docker"),
         "private": False,
         "has_issues": False,
         "has_wiki": False,
@@ -152,7 +211,8 @@ def ensure_release(app_id, apply):
         "",
         APPS[app_id]["release_note"],
         "",
-        "Assets: x86_64 and aarch64 Docker application packages with SHA-256 checksums.",
+        "Assets: x86_64 and aarch64 %s packages with SHA-256 checksums." % (
+            "Deb" if app_kind(app_id) == "deb" else "Docker application"),
     ])
     status, rel = call("POST", "%s/repos/%s/%s/releases" % (API, OWNER, name), {
         "tag_name": TAG,
@@ -175,36 +235,39 @@ def publish_assets(app_id, rel, apply, replace=False):
         status, assets = call("GET", "%s/repos/%s/%s/releases/%s/assets" % (API, OWNER, name, rel["id"]))
         if status == 200:
             existing = {a["name"]: a["id"] for a in assets}
-    for arch in ARCHES:
-        for suffix in ("", ".sha256"):
-            filename = "%s_%s.tar.gz%s" % (app_id, arch, suffix)
-            if filename in existing:
-                if not replace:
-                    print("skip existing asset: %s" % filename)
-                    continue
-                print("replace asset: %s" % filename)
-                if not apply:
-                    continue
-                status, _ = call("DELETE", "%s/repos/%s/%s/releases/assets/%s" % (
-                    API, OWNER, name, existing[filename]))
-                if status not in (200, 204):
-                    print("  delete failed: http %s" % status)
-                    continue
-            else:
-                print("upload asset: %s" % filename)
-                if not apply:
-                    continue
-            path = os.path.join(DIST, app_id, filename)
-            with open(path, "rb") as fh:
-                data = fh.read()
-            ctype = "text/plain" if suffix else "application/gzip"
-            status, asset = call(
-                "POST",
-                "%s/repos/%s/%s/releases/%s/assets?name=%s" % (UPLOAD, OWNER, name, rel["id"], filename),
-                raw=data,
-                ctype=ctype,
-            )
-            print("  http %s %s" % (status, asset.get("state", asset.get("message", ""))[:80]))
+    for filename in asset_files(app_id):
+        if filename in existing:
+            if not replace:
+                print("skip existing asset: %s" % filename)
+                continue
+            print("replace asset: %s" % filename)
+            if not apply:
+                continue
+            status, _ = call("DELETE", "%s/repos/%s/%s/releases/assets/%s" % (
+                API, OWNER, name, existing[filename]))
+            if status not in (200, 204):
+                print("  delete failed: http %s" % status)
+                continue
+        else:
+            print("upload asset: %s" % filename)
+            if not apply:
+                continue
+        path = os.path.join(DIST, app_id, filename)
+        with open(path, "rb") as fh:
+            data = fh.read()
+        if filename.endswith(".sha256"):
+            ctype = "text/plain"
+        elif filename.endswith(".deb"):
+            ctype = "application/vnd.debian.binary-package"
+        else:
+            ctype = "application/gzip"
+        status, asset = call(
+            "POST",
+            "%s/repos/%s/%s/releases/%s/assets?name=%s" % (UPLOAD, OWNER, name, rel["id"], filename),
+            raw=data,
+            ctype=ctype,
+        )
+        print("  http %s %s" % (status, asset.get("state", asset.get("message", ""))[:80]))
 
 
 def main():
@@ -221,7 +284,7 @@ def main():
         for app_id in apps:
             print("%-14s repo=%s/%s release=%s assets=%s" % (
                 app_id, OWNER, repo_name(app_id), TAG,
-                ", ".join("%s_%s.tar.gz" % (app_id, a) for a in ARCHES)))
+                ", ".join(asset_files(app_id)[::2])))
         print("\nno GITHUB_TOKEN: planned actions only")
         return
     for app_id in apps:

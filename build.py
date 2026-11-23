@@ -90,6 +90,30 @@ ICONS = {
   <path d="M48 55h22" stroke="#34d399" stroke-width="6" stroke-linecap="round"/>
 </svg>
 """,
+    "dreeve": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <circle cx="48" cy="48" r="40" fill="#16a34a"/>
+  <path d="M24 60l14-14 10 8 12-18 12 10" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="72" cy="46" r="5" fill="#bbf7d0"/>
+  <path d="M24 72h48" stroke="#86efac" stroke-width="5" stroke-linecap="round"/>
+</svg>
+""",
+    "wger": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <circle cx="48" cy="48" r="40" fill="#0284c7"/>
+  <rect x="18" y="42" width="10" height="12" rx="3" fill="#e0f2fe"/>
+  <rect x="68" y="42" width="10" height="12" rx="3" fill="#e0f2fe"/>
+  <rect x="27" y="36" width="7" height="24" rx="2" fill="#ffffff"/>
+  <rect x="62" y="36" width="7" height="24" rx="2" fill="#ffffff"/>
+  <rect x="34" y="45" width="28" height="6" rx="3" fill="#bae6fd"/>
+</svg>
+""",
+    "cookcli": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <circle cx="48" cy="48" r="40" fill="#ea580c"/>
+  <path d="M30 46h36v22a6 6 0 0 1-6 6H36a6 6 0 0 1-6-6z" fill="#ffffff"/>
+  <path d="M25 46h46" stroke="#ffedd5" stroke-width="6" stroke-linecap="round"/>
+  <path d="M39 38c0-5 4-9 9-9s9 4 9 9" fill="none" stroke="#fed7aa" stroke-width="4" stroke-linecap="round"/>
+  <path d="M40 22c-3-4 1-7 0-10M56 22c3-4-1-7 0-10" fill="none" stroke="#fdba74" stroke-width="3" stroke-linecap="round"/>
+</svg>
+""",
 }
 
 # ---------------------------------------------------------------------------
@@ -582,6 +606,309 @@ x-app-meta:
     },
 }
 
+APPS["dreeve"] = {
+    "name": "Dreeve",
+    "kind": "docker",
+    "help": "https://dreeve.app/docs",
+    "official": "https://dreeve.app",
+    "compose": """version: "3.8"
+x-dreeve-env: &dreeve-env
+  - TZ=Asia/Shanghai
+  - IMPORT_MODE=files
+  - APP_URL=http://localhost:18088
+  - APP_SECRET=@@app_secret@@
+  - ADMIN_USERNAME=admin
+  - ADMIN_PASSWORD_HASH=$$2y$$12$$@@admin_password_hash@@
+  - PUID=1000
+  - PGID=1000
+  - FRANKENPHP_NUM_WORKERS=2
+
+services:
+  dreeve:
+    image: robiningelbrecht/dreeve:v5.9.1
+    container_name: dreeve
+    restart: unless-stopped
+    ports:
+      - "18088:8080"
+    volumes:
+      - ./data/build:/var/www/build
+      - ./data/storage/database:/var/www/storage/database
+      - ./data/storage/files:/var/www/storage/files
+      - ./data/watch:/var/www/watch
+      - ./data/backups:/var/www/backups
+    environment: *dreeve-env
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2019/metrics"]
+      start_period: 60s
+
+  dreeve-daemon:
+    image: robiningelbrecht/dreeve:v5.9.1
+    container_name: dreeve-daemon
+    restart: unless-stopped
+    command: ["bin/console", "app:daemon:run"]
+    volumes:
+      - ./data/build:/var/www/build
+      - ./data/storage/database:/var/www/storage/database
+      - ./data/storage/files:/var/www/storage/files
+      - ./data/watch:/var/www/watch
+      - ./data/backups:/var/www/backups
+    environment: *dreeve-env
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/www/storage/database/dreeve.db || exit 1"]
+      start_period: 30s
+
+x-app-meta:
+  web:
+    port: 18088
+    protocol: http
+""",
+    "descript": {
+        "zh-cn": "自托管的运动健身数据面板：导入 Garmin、Wahoo、Polar 等设备的 .fit/.tcx/.gpx 文件，用图表和年度统计查看骑行、跑步等训练数据。",
+        "zh-hk": "自託管的運動健身數據面板：導入 Garmin、Wahoo、Polar 等裝置的 .fit/.tcx/.gpx 檔案，用圖表和年度統計查看騎行、跑步等訓練數據。",
+        "en-us": "A self-hosted sports and fitness dashboard: import .fit/.tcx/.gpx files from Garmin, Wahoo, Polar and similar devices, then explore rides and runs with charts and yearly stats.",
+    },
+    "important": {
+        "zh-cn": "管理员账号为 admin，初始密码为 Dreeve-2026，登录后请尽快在后台改为自己的密码（修改 ADMIN_PASSWORD_HASH）。APP_URL 默认是 http://localhost:18088，需要生成外部链接时请改成 NAS 的实际地址。运动文件可放进 watch 目录自动导入，或在后台上传。",
+        "zh-hk": "管理員帳號為 admin，初始密碼為 Dreeve-2026，登入後請盡快在後台改為自己的密碼（修改 ADMIN_PASSWORD_HASH）。APP_URL 預設是 http://localhost:18088，需要產生外部連結時請改成 NAS 的實際位址。運動檔案可放進 watch 目錄自動導入，或在後台上傳。",
+        "en-us": "The administrator account is admin with the initial password Dreeve-2026; change it after signing in by replacing ADMIN_PASSWORD_HASH. APP_URL defaults to http://localhost:18088 and must be set to the NAS address if generated links are needed. Activity files can be dropped into the watch folder or uploaded in the admin panel.",
+    },
+    "release_note": "1.0.0: First release, packaged from the official Docker Hub image robiningelbrecht/dreeve with file import mode and the dreeve daemon.",
+    "secrets": {
+        "app_secret": "hex",
+        "admin_password": "fixed:Dreeve-2026",
+        "admin_password_hash": "bcrypt",
+    },
+}
+
+APPS["wger"] = {
+    "name": "wger",
+    "kind": "docker",
+    "help": "https://wger.readthedocs.io/",
+    "official": "https://wger.de",
+    "compose": """version: "3.8"
+x-wger-env: &wger-env
+  - TZ=Asia/Shanghai
+  - TIME_ZONE=Asia/Shanghai
+  - SECRET_KEY=@@secret_key@@
+  - SITE_URL=http://localhost:18089
+  - JWT_PUBLIC_KEY=@@jwt_public_key@@
+  - JWT_PRIVATE_KEY=@@jwt_private_key@@
+  - POSTGRES_USER=wger
+  - POSTGRES_PASSWORD=@@db_password@@
+  - POSTGRES_DB=wger
+  - PS_DATABASE_URI=postgres://wger:@@db_password@@@db:5432/wger
+  - CELERY_BROKER=redis://cache:6379/2
+  - CELERY_BACKEND=redis://cache:6379/2
+  - DJANGO_CACHE_LOCATION=redis://cache:6379/1
+  - DJANGO_PERFORM_MIGRATIONS=True
+  - DJANGO_COLLECTSTATIC_ON_STARTUP=True
+  - USE_CELERY=True
+  - SYNC_EXERCISES_CELERY=True
+  - SYNC_EXERCISE_IMAGES_CELERY=True
+  - SYNC_EXERCISE_VIDEOS_CELERY=True
+  - SYNC_INGREDIENTS_CELERY=True
+  - ALLOW_REGISTRATION=True
+  - ALLOW_GUEST_USERS=False
+  - AXES_ENABLED=True
+  - NUMBER_OF_PROXIES=1
+  - WGER_USE_GUNICORN=True
+  - WGER_PORT=8000
+  - GUNICORN_CMD_ARGS=--workers 3 --threads 2 --worker-class gthread --timeout 240
+
+services:
+  init:
+    image: alpine:3.20
+    container_name: wger-init
+    restart: "no"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /data/static /data/media /data/beat /data/redis
+        chown -R 1000:1000 /data/static /data/media /data/beat
+        chown -R 999:999 /data/redis
+    volumes:
+      - ./data:/data
+
+  db:
+    image: postgres:15-alpine
+    container_name: wger-db
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - POSTGRES_USER=wger
+      - POSTGRES_PASSWORD=@@db_password@@
+      - POSTGRES_DB=wger
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U wger"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  cache:
+    image: redis:7-alpine
+    container_name: wger-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "300", "1", "--loglevel", "warning"]
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: wger/server:2.7
+    container_name: wger-web
+    restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    environment: *wger-env
+    volumes:
+      - ./data/static:/home/wger/static
+      - ./data/media:/home/wger/media
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "/dev/null", "http://localhost:8000/api/v2/version/"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 300s
+
+  celery-worker:
+    image: wger/server:2.7
+    container_name: wger-celery-worker
+    restart: unless-stopped
+    command: /start-worker
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    environment: *wger-env
+    volumes:
+      - ./data/static:/home/wger/static
+      - ./data/media:/home/wger/media
+    healthcheck:
+      test: ["CMD", "celery", "-A", "wger", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+
+  celery-beat:
+    image: wger/server:2.7
+    container_name: wger-celery-beat
+    restart: unless-stopped
+    command: /start-beat
+    depends_on:
+      celery-worker:
+        condition: service_healthy
+    environment: *wger-env
+    volumes:
+      - ./data/beat:/home/wger/beat
+
+  nginx:
+    image: nginx:1.28-alpine
+    container_name: wger-nginx
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_started
+    ports:
+      - "18089:80"
+    volumes:
+      - ./data/static:/wger/static:ro
+      - ./data/media:/wger/media:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/nginx/conf.d/default.conf <<'EOF'
+        server {
+          listen 80;
+          client_max_body_size 100m;
+          location /static/ {
+            root /wger;
+          }
+          location /media/ {
+            alias /wger/media/;
+          }
+          location / {
+            proxy_pass http://wger-web:8000;
+            proxy_http_version 1.1;
+            proxy_set_header Host $$http_host;
+            proxy_set_header X-Real-IP $$remote_addr;
+            proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $$scheme;
+            proxy_set_header X-Forwarded-Host $$http_host;
+            proxy_set_header Upgrade $$http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_redirect off;
+            proxy_read_timeout 3600s;
+          }
+        }
+        EOF
+        nginx -g 'daemon off;'
+
+x-app-meta:
+  web:
+    port: 18089
+    protocol: http
+""",
+    "descript": {
+        "zh-cn": "自托管的健身与营养管理器：制定训练计划、浏览动作库、记录体重与饮食，提供网页界面和 REST API，手机 App 也能连接。",
+        "zh-hk": "自託管的健身與營養管理器：制定訓練計劃、瀏覽動作庫、記錄體重與飲食，提供網頁介面和 REST API，手機 App 也能連線。",
+        "en-us": "A self-hosted workout and nutrition manager: plan routines, browse the exercise database, and track body weight and meals, with a web UI and a REST API for the mobile app.",
+    },
+    "important": {
+        "zh-cn": "由 6 个容器组成（Web、PostgreSQL、Redis、Celery×2、Nginx），建议至少 2GB 可用内存。首次启动需要执行数据库迁移和静态文件收集，可能要 5–10 分钟才能打开页面，请耐心等待。SITE_URL 默认是 http://localhost:18089，需要外链或媒体地址时请改成 NAS 的实际地址。注册功能默认开启。",
+        "zh-hk": "由 6 個容器組成（Web、PostgreSQL、Redis、Celery×2、Nginx），建議至少 2GB 可用記憶體。首次啟動需要執行資料庫遷移和靜態檔案收集，可能要 5–10 分鐘才能開啟頁面，請耐心等待。SITE_URL 預設是 http://localhost:18089，需要外鏈或媒體位址時請改成 NAS 的實際位址。註冊功能預設開啟。",
+        "en-us": "Runs as six containers (web, PostgreSQL, Redis, two Celery workers and nginx) and needs at least 2 GB of free memory. The first start runs database migrations and collects static files, so the page can take 5-10 minutes to come up. SITE_URL defaults to http://localhost:18089 and must be set to the NAS address if external links or media URLs are needed. Registration is enabled by default.",
+    },
+    "release_note": "1.0.0: First release of the self-hosted wger stack (wger 2.7) with PostgreSQL, Redis, Celery and nginx.",
+    "secrets": {
+        "secret_key": "token",
+        "db_password": "token",
+        "jwt_public_key": "rsa",
+        "jwt_private_key": "rsa",
+    },
+}
+
+# CookCLI has no official Docker Hub image, so it ships as a TOS deb package
+# built by build_deb.py: the static musl binary from the upstream release,
+# a systemd unit and an nginx location block.
+APPS["cookcli"] = {
+    "name": "CookCLI",
+    "kind": "deb",
+    "help": "https://github.com/cooklang/CookCLI",
+    "official": "https://cooklang.org",
+    "descript": {
+        "zh-cn": "把纯文本 .cook 食谱变成在线食谱库：浏览、搜索、按份数缩放、生成购物清单，也可以直接在网页里编辑食谱。食谱文件以普通文本保存在 NAS 共享文件夹中。",
+        "zh-hk": "把純文字 .cook 食譜變成線上食譜庫：瀏覽、搜尋、按份數縮放、產生購物清單，也可以直接在網頁裡編輯食譜。食譜檔案以一般文字保存在 NAS 共享資料夾中。",
+        "en-us": "Turns plain-text .cook recipes into a browsable cookbook: browse, search, scale by servings and build shopping lists, and edit recipes right in the web UI. Recipes stay ordinary text files in a NAS shared folder.",
+    },
+    "important": {
+        "zh-cn": "食谱保存在 NAS 共享文件夹 cookcli-data 的 recipes 子目录中，可直接通过文件管理器或 SMB 增删修改。默认不启用登录，同一网络内能访问本机的人都可以查看和修改食谱；如需限制，请在 NAS 防火墙中限制 18087 端口。网页地址为 http://NAS地址/cookcli/。",
+        "zh-hk": "食譜保存在 NAS 共享資料夾 cookcli-data 的 recipes 子目錄中，可直接透過檔案管理員或 SMB 增刪修改。預設不啟用登入，同一網路內能存取本機的人都可以檢視和修改食譜；如需限制，請在 NAS 防火牆中限制 18087 埠。網頁位址為 http://NAS位址/cookcli/。",
+        "en-us": "Recipes live in the recipes subfolder of the cookcli-data NAS shared folder and can be added or edited through File Manager or SMB. Sign-in is off by default, so anyone who can reach the NAS on the network can view and change recipes; restrict port 18087 in the NAS firewall if that is not wanted. The web UI is served at http://<nas>/cookcli/.",
+    },
+    "release_note": "1.0.0: First release, packaging CookCLI 0.41.1 as a TOS deb with its own web server, shared recipe folder and reverse-proxy entry.",
+}
+
 PUBLISHER_BY_LANG = {
     "zh-cn": PUBLISHER_ZH,
     "zh-hk": "TerraMaster 社群開發者",
@@ -601,25 +928,87 @@ EN_FALLBACK = {
 }
 
 
+def _b64url(value):
+    raw = value.to_bytes((value.bit_length() + 7) // 8, "big")
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+
+def _rsa_jwk_pair():
+    """Generate the RS256 JWK pair wger expects in JWT_PUBLIC_KEY / JWT_PRIVATE_KEY."""
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    numbers = rsa.generate_private_key(public_exponent=65537, key_size=2048).private_numbers()
+    public = numbers.public_numbers
+    jwk_public = {
+        "alg": "RS256", "kty": "RSA", "kid": "wger",
+        "n": _b64url(public.n), "e": _b64url(public.e),
+    }
+    jwk_private = dict(jwk_public)
+    jwk_private.update({
+        "d": _b64url(numbers.d), "p": _b64url(numbers.p), "q": _b64url(numbers.q),
+        "dp": _b64url(numbers.dmp1), "dq": _b64url(numbers.dmq1), "qi": _b64url(numbers.iqmp),
+    })
+    wrap = lambda payload: base64.b64encode(json.dumps(payload).encode()).decode()
+    return wrap(jwk_public), wrap(jwk_private)
+
+
+def _bcrypt_body(password):
+    """Return the part of a bcrypt hash that follows the $2y$12$ prefix.
+
+    The compose template supplies the prefix with every dollar escaped ($$),
+    because Compose interpolates unescaped "$" in the file. The digest uses
+    the $2y$ variant Symfony's bcrypt hasher writes; the hash itself is
+    identical to $2b$.
+    """
+    import bcrypt
+
+    digest = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    if digest.startswith("$2b$"):
+        digest = "$2y$" + digest[4:]
+    return digest.split("$", 3)[3]
+
+
+def _secret_value(app_id, key, descriptor, data):
+    if key == "app_key":
+        return base64.b64encode(secrets.token_bytes(32)).decode()
+    if key == "jwt_secret":
+        return secrets.token_urlsafe(40)
+    if key == "admin_password":
+        return "Af-" + secrets.token_urlsafe(12)
+    if key == "s3_key":
+        return "af" + secrets.token_hex(8)
+    if descriptor.startswith("fixed:"):
+        return descriptor.split(":", 1)[1]
+    if descriptor == "hex":
+        return secrets.token_hex(32)
+    if descriptor == "token":
+        return secrets.token_urlsafe(40)
+    if descriptor == "bcrypt":
+        return _bcrypt_body(data[app_id]["admin_password"])
+    if descriptor == "rsa":
+        jwk_public, jwk_private = _rsa_jwk_pair()
+        data.setdefault(app_id, {})["jwt_public_key"] = jwk_public
+        data.setdefault(app_id, {})["jwt_private_key"] = jwk_private
+        return jwk_public if key == "jwt_public_key" else jwk_private
+    return secrets.token_urlsafe(18)
+
+
 def load_secrets():
+    data = {}
     if os.path.exists(SECRETS_FILE):
         with open(SECRETS_FILE, "r", encoding="utf-8") as fh:
-            return json.load(fh)
-    data = {}
+            data = json.load(fh)
+    changed = False
     for app_id, app in APPS.items():
-        for key in app.get("secrets", {}):
-            if key == "app_key":
-                data.setdefault(app_id, {})[key] = base64.b64encode(secrets.token_bytes(32)).decode()
-            elif key == "jwt_secret":
-                data.setdefault(app_id, {})[key] = secrets.token_urlsafe(40)
-            elif key == "admin_password":
-                data.setdefault(app_id, {})[key] = "Af-" + secrets.token_urlsafe(12)
-            elif key == "s3_key":
-                data.setdefault(app_id, {})[key] = "af" + secrets.token_hex(8)
-            else:
-                data.setdefault(app_id, {})[key] = secrets.token_urlsafe(18)
-    with open(SECRETS_FILE, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2)
+        for key, descriptor in app.get("secrets", {}).items():
+            if key in data.get(app_id, {}):
+                continue
+            value = _secret_value(app_id, key, str(descriptor), data)
+            data.setdefault(app_id, {})[key] = value
+            changed = True
+    if changed:
+        with open(SECRETS_FILE, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2)
     return data
 
 
@@ -633,8 +1022,37 @@ def render_compose(app_id, secrets_map):
     return text
 
 
+def is_deb_app(app_id):
+    return APPS[app_id].get("kind") == "deb"
+
+
 def build_config(app_id, arch):
     app = APPS[app_id]
+    if is_deb_app(app_id):
+        return {
+            "id": app_id,
+            "icon": "/images/icons/%s.svg" % app_id,
+            "publisher": PUBLISHER,
+            "exec": True,
+            "open_path": True,
+            "path": "/%s/" % app_id,
+            "help": app["help"],
+            "version": VERSION,
+            "recommend": False,
+            "beta": False,
+            "low_version": LOW_VERSION,
+            "category": CATEGORY,
+            "depend": [],
+            "relation": [],
+            "platform": arch,
+            "official": app["official"],
+            "application_type": "deb",
+            "system_id": app_id,
+            "package": app_id,
+            "user": app_id,
+            "all_user_display": True,
+            "allow_open_in_mobile": False,
+        }
     return {
         "id": app_id,
         "icon": "/images/icons/%s.svg" % app_id,
@@ -798,14 +1216,15 @@ def main():
 
     arches = args.arch or ARCHES
     secrets_map = load_secrets()
+    docker_apps = [app_id for app_id in APPS if not is_deb_app(app_id)]
     if not args.check:
-        for app_id in APPS:
+        for app_id in docker_apps:
             for arch in arches:
                 out, digest = build_one(app_id, arch, secrets_map)
                 print("built %-30s %s" % (os.path.relpath(out, ROOT), digest[:16]))
 
     errors = []
-    for app_id in APPS:
+    for app_id in docker_apps:
         for arch in ARCHES:
             errors.extend(validate_package(app_id, arch))
 
@@ -814,7 +1233,7 @@ def main():
         for err in errors:
             print(" -", err)
         sys.exit(1)
-    print("\nvalidation: %d packages OK" % (len(APPS) * len(ARCHES)))
+    print("\nvalidation: %d packages OK" % (len(docker_apps) * len(ARCHES)))
 
 
 if __name__ == "__main__":

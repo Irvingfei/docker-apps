@@ -19,6 +19,7 @@ TOOLCHAIN_REPO = "tos-docker-apps"
 TOOLCHAIN_FILES = [
     "README.md",
     "build.py",
+    "build_deb.py",
     "publish_github.py",
     "publish_sources.py",
     "submit_tdp.py",
@@ -28,16 +29,17 @@ TOOLCHAIN_FILES = [
 
 SRC_README = """# Source
 
-This directory holds the source files of the TOS 7 Docker package. The release
+This directory holds the source files of the TOS 7 {kind} package. The release
 assets are built from these files.
 
 - `config.x86_64.ini` / `config.aarch64.ini` — `config.ini` for each architecture
-- `docker-compose.yml` — build template; `@@...@@` placeholders are replaced at build time
-- `{lang}` — 14 language sections
+{extra}- `{lang}` — 14 language sections
 - `{svg}` — application icon
 
 Build toolchain: https://github.com/Irvingfei/tos-docker-apps
 """
+
+SRC_COMPOSE_LINE = "- `docker-compose.yml` — build template; `@@...@@` placeholders are replaced at build time\n"
 
 
 def blob_sha(content):
@@ -157,13 +159,17 @@ def commit_files(repo, branch, files, message, apply):
 
 
 def app_files(app_id):
+    kind = APPS[app_id].get("kind", "docker")
     files = {"README.md": repo_readme(app_id)}
     files["src/README.md"] = SRC_README.format(
+        kind="Deb" if kind == "deb" else "Docker",
+        extra="" if kind == "deb" else SRC_COMPOSE_LINE,
         lang="%s.lang" % app_id, svg="%s.svg" % app_id)
     for arch in ARCHES:
         files["src/config.%s.ini" % arch] = json.dumps(
             build_config(app_id, arch), ensure_ascii=False, indent=2) + "\n"
-    files["src/docker-compose.yml"] = APPS[app_id]["compose"]
+    if kind != "deb":
+        files["src/docker-compose.yml"] = APPS[app_id]["compose"]
     files["src/%s.lang" % app_id] = build_lang(app_id)
     files["src/%s.svg" % app_id] = ICONS[app_id]
     return files
