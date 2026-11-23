@@ -208,12 +208,15 @@ def main():
         for app_id in args.app or list(APPS):
             print("=== %s ===" % app_id)
             name = repo_name(app_id)
-            repo = ensure_repo(name, "%s packaged for TerraMaster TOS 7 (Docker)" % APPS[app_id]["name"], args.apply)
+            kind = "Deb" if APPS[app_id].get("kind") == "deb" else "Docker"
+            repo = ensure_repo(name, "%s packaged for TerraMaster TOS 7 (%s)" % (APPS[app_id]["name"], kind), args.apply)
             if not repo:
                 continue
             branch = repo.get("default_branch") or "main"
-            commit_files(name, branch, app_files(app_id),
-                         "Add application source and build template", args.apply)
+            files = app_files(app_id)
+            if bootstrap(name, branch, files, args.apply):
+                commit_files(name, branch, files,
+                             "Add application source and build template", args.apply)
 
     if not args.apply:
         print("\ndry-run only; re-run with --apply to upload")
