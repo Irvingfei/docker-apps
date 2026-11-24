@@ -550,8 +550,10 @@ def validate(arch):
             errors.append("config.ini platform mismatch")
         if config.get("application_type") != "deb":
             errors.append("config.ini application_type must be deb")
-        if config.get("open_path") is not True:
-            errors.append("config.ini open_path must be true")
+        if config.get("type") != "iframe":
+            errors.append("config.ini type must be iframe")
+        if config.get("open_path") is not None:
+            errors.append("config.ini must not set open_path in iframe mode")
         if config.get("path") != "/%s/" % APP_ID:
             errors.append("config.ini path must be /%s/" % APP_ID)
         if config.get("package") != APP_ID or config.get("system_id") != APP_ID:

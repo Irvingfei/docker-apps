@@ -37,7 +37,7 @@ python build_deb.py --check     # 只校验已有 deb
 ```
 
 Docker 构建会校验：包根只含 4 个文件、config.ini JSON、14 种语言节点及 name/auth/descript、SVG 的 viewBox、compose YAML 可解析、无 privileged / host 网络 / `/Volume*`。
-Deb 构建会校验：ar 容器与 control/data 成员、Package/Version/Architecture、`usr/local/cookcli/` 下的配置/语言/图标/`webui.bz2`/nginx 单元、config.ini（`application_type=deb`、`open_path=true`、`path=/cookcli/`）、ELF 架构、nginx 只含 location 块。
+Deb 构建会校验：ar 容器与 control/data 成员、Package/Version/Architecture、`usr/local/cookcli/` 下的配置/语言/图标/`webui.bz2`/nginx 单元、config.ini（`application_type=deb`、`type=iframe`、`path=/cookcli/`）、ELF 架构、nginx 只含 location 块。
 
 BookStack、Dreeve、wger 的密码与密钥在首次构建时生成并保存在 `.secrets.json`（已加入 `.gitignore`，不要提交）。重复构建会复用这些值；cookcli 无构建期密钥。
 
@@ -90,7 +90,7 @@ python publish_sources.py --apply   # 上传工具链和应用源码
 
 **CookCLI（deb）**
 - 二进制为上游静态 musl 构建，按 x86_64/aarch64 分别下载并校验上游 `.sha256`；不依赖 Docker。
-- 以外部打开方式挂到 `/cookcli/`，nginx 只做前缀转发，`Host` 透传；上游对 Host 有校验，改动反代头可能导致请求被拒。
+- 以内嵌窗口（iframe）方式挂到 `/cookcli/`，随 TOS 桌面所在端口打开，不依赖 443；nginx 只做前缀转发，`Host` 透传，上游对 Host 有校验，改动反代头可能导致请求被拒。
 - 食谱目录优先用共享文件夹 `/Volume*/cookcli-data/recipes`，安装时通过 `ter_share_add` 创建；若平台没有共享目录机制则回落到 `/usr/local/cookcli/data/recipes`。
 - 首次安装后没有示例食谱，页面可能为空，需自行放入 `.cook` 文件。
 
